@@ -11,3 +11,14 @@ sources:
           - name: DateKey
             tests:
               - unique
+
+  - name: chinook
+    database: raw_statsnfacts
+    schema: chinook
+
+    tables:
+      - name: Customers
+        columns:
+          - name: CustomerId
+            tests:
+              - unique
