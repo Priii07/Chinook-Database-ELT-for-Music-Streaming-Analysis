@@ -1,0 +1,13 @@
+version: 2
+
+sources:
+  - name: conformed
+    database: raw_statsnfacts
+    schema: conformed
+
+    tables:
+      - name: DateDimension
+        columns: 
+          - name: DateKey
+            tests:
+              - unique
