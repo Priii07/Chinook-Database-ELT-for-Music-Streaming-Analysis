@@ -22,3 +22,35 @@ sources:
           - name: CustomerId
             tests:
               - unique
+
+      - name: Track
+        columns:
+          - name: TrackId
+            tests:
+              - unique
+
+      - name: Album
+        columns:
+          - name: AlbumId
+            tests:
+              - unique
+
+      - name: Artist
+        columns:
+          - name: ArtistId
+            tests:
+              - unique
+      
+      - name: MediaType
+        columns:
+          - name: MediaTypeId
+            tests:
+              - unique
+      
+      - name: Genre
+        columns:
+          - name: GenreId
+            tests:
+              - unique
+      
+      - name: CustomerTrackReviw
