@@ -10,7 +10,7 @@ stg_tracks as (
 SELECT 
     {{ dbt_utils.generate_surrogate_key(['ct.customerid'])}} as customerkey,
     {{ dbt_utils.generate_surrogate_key(['ct.trackid'])}} as trackkey,
-    concat(c.firstname , ' ' , c.lastname) as customernamefirstlast,
+    concat(c.firstname , ' ' , c.lastname) as customername,
     t.name as trackname,
     ct.sentiment
 FROM stg_customer_track ct
