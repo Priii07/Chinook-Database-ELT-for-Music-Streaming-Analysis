@@ -11,11 +11,6 @@ SELECT
     f.quantity, 
     f.totalearnings,
     f.tracklengthinmins,
-    f.tracksizeinmb,
-    f.billingaddress,
-    f.billingcity,
-    f.billingstate,
-    f.billingcountry,
-    f.BILLINGPOSTALCODE
+    f.tracksizeinmb
 FROM f_storage f 
 LEFT JOIN d_tracks t on f.trackkey = t.trackkey 

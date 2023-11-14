@@ -21,12 +21,7 @@ SELECT
     il.quantity,
     il.totalearnings,
     ROUND((t.milliseconds)/(1000 * 60),2) as tracklengthinmins,
-    ROUND((t.bytes / 1024),2) as tracksizeinmb,
-    i.billingaddress,
-    i.billingcity,
-    i.billingstate,
-    i.billingcountry,
-    i.BILLINGPOSTALCODE
+    ROUND((t.bytes / 1024),2) as tracksizeinmb
 FROM stg_invoiceline il
 JOIN stg_invoice i on il.invoiceid = i.invoiceid 
 JOIN stg_tracks t on il.trackid = t.trackid
