@@ -54,3 +54,15 @@ sources:
               - unique
       
       - name: CustomerTrackReviw
+
+      - name: Invoice
+        columns:
+          - name: invoiceid
+            tests:
+              - unique
+
+      - name: InvoiceLine
+        columns:
+          - name: invoicelineid
+            tests:
+              - unique
