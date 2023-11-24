@@ -21,7 +21,10 @@ SELECT
     a.name as artistname,
     m.name as mediatypename,
     g.name as genrename,
-    t.composer as composername
+    CASE 
+        WHEN t.composer is NULL THEN 'no composer name'
+        ELSE t.composer
+    END as composername
 FROM stg_tracks t 
 LEFT JOIN stg_album al on t.albumid = al.albumid
 LEFT JOIN stg_artist a on al.artistid = a.artistid
