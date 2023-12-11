@@ -1,0 +1,68 @@
+version: 2
+
+sources:
+  - name: conformed
+    database: raw_statsnfacts
+    schema: conformed
+
+    tables:
+      - name: DateDimension
+        columns: 
+          - name: DateKey
+            tests:
+              - unique
+
+  - name: chinook
+    database: raw_statsnfacts
+    schema: chinook
+
+    tables:
+      - name: Customers
+        columns:
+          - name: CustomerId
+            tests:
+              - unique
+
+      - name: Track
+        columns:
+          - name: TrackId
+            tests:
+              - unique
+
+      - name: Album
+        columns:
+          - name: AlbumId
+            tests:
+              - unique
+
+      - name: Artist
+        columns:
+          - name: ArtistId
+            tests:
+              - unique
+      
+      - name: MediaType
+        columns:
+          - name: MediaTypeId
+            tests:
+              - unique
+      
+      - name: Genre
+        columns:
+          - name: GenreId
+            tests:
+              - unique
+      
+      - name: CustomerTrackReviw
+
+      - name: Invoice
+        columns:
+          - name: invoiceid
+            tests:
+              - unique
+
+      - name: InvoiceLine
+        columns:
+          - name: invoicelineid
+            tests:
+              - unique
