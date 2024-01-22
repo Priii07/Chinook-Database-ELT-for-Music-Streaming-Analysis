@@ -1,0 +1,222 @@
+USE WAREHOUSE TRANSFORMING;
+--Create Database
+CREATE DATABASE if not exists analytics_statsnfacts;
+CREATE DATABASE if not exists raw_statsnfacts;
+
+
+Create schema if not exists analytics_statsnfacts.chinook;
+create schema if not exists raw_statsnfacts.chinook;
+create schema if not exists raw_statsnfacts.conformed;
+
+-- File format
+-- define file formats
+create or replace file format RAW_STATSNFACTS.PUBLIC.PARQUET 
+    TYPE = parquet
+    REPLACE_INVALID_CHARACTERS = TRUE;
+
+create or replace file format RAW_STATSNFACTS.PUBLIC.JSONARRAY 
+    TYPE = json
+    STRIP_OUTER_ARRAY = TRUE;
+
+create or replace file format RAW_STATSNFACTS.PUBLIC.JSON
+    TYPE = json
+    STRIP_OUTER_ARRAY = FALSE;
+
+create or replace file format RAW_STATSNFACTS.PUBLIC.CSVHEADER
+    TYPE = 'csv'
+    FIELD_DELIMITER  = ','
+    SKIP_HEADER=1;
+    
+create or replace file format RAW_STATSNFACTS.PUBLIC.CSV
+    TYPE = csv
+    FIELD_DELIMITER  = ','
+    PARSE_HEADER = FALSE
+    SKIP_HEADER  = 0;  
+
+-- create stages
+-- varying file formats
+CREATE or replace STAGE RAW_STATSNFACTS.PUBLIC.externalworld_files
+  URL = 'azure://externalworld.blob.core.windows.net/files/';
+
+-- these are all parquet file formats
+CREATE or replace STAGE RAW_STATSNFACTS.PUBLIC.externalworld_database
+  URL = 'azure://externalworld.blob.core.windows.net/database/'
+  FILE_FORMAT = RAW_STATSNFACTS.PUBLIC.PARQUET ;
+
+
+-- stage the date dimension
+CREATE or REPLACE TABLE RAW_STATSNFACTS.conformed.datedimension (
+    datekey int
+    ,date date
+    ,datetime timestamp
+    ,year int
+    ,quarter int
+    ,quartername varchar(2)
+    ,month int
+    ,monthname varchar(3)
+    ,day int
+    ,dayofweek int
+    ,dayname varchar(3)
+    ,weekday varchar(1)
+    ,weekofyear int
+    ,dayofyear int
+) AS
+    WITH CTE_MY_DATE AS (
+    SELECT DATEADD(DAY, SEQ4(), '2009-01-01 00:00:00') AS MY_DATE
+    FROM TABLE(GENERATOR(ROWCOUNT=>365*30))
+    )
+    SELECT
+    REPLACE(TO_DATE(MY_DATE)::varchar,'-','')::int  as datekey,
+    TO_DATE(MY_DATE) as date
+    ,TO_TIMESTAMP(MY_DATE) as datetime
+    ,YEAR(MY_DATE) as year
+    ,QUARTER(MY_DATE) as quarter
+    ,CONCAT('Q', QUARTER(MY_DATE)::varchar) as quartername
+    ,MONTH(MY_DATE) as month
+    ,MONTHNAME(MY_DATE) as monthname
+    ,DAY(MY_DATE) as day
+    ,DAYOFWEEK(MY_DATE) as dayofweek
+    ,DAYNAME(MY_DATE) as dayname
+    ,case when DAYOFWEEK(MY_DATE) between 1 and 5 then 'Y' else 'N' end as weekday
+    ,WEEKOFYEAR(MY_DATE) as weekofyear
+    ,DAYOFYEAR(MY_DATE) as dayofyear
+    FROM CTE_MY_DATE
+    ;
+
+
+
+-- stage the customer-track review.
+DROP TABLE customertrackreviw
+CREATE or REPLACE TABLE RAW_STATSNFACTS.CHINOOK.customertrackreviw (
+	customerid int, 
+	trackid int, 
+	sentiment varchar
+);
+COPY INTO RAW_STATSNFACTS.CHINOOK.customertrackreviw 
+FROM '@RAW_STATSNFACTS.PUBLIC.externalworld_files/chinook.customer-track-reviews.json'
+file_format=RAW_STATSNFACTS.PUBLIC.JSONARRAY
+MATCH_BY_COLUMN_NAME = CASE_INSENSITIVE;
+
+SELECT * FROM RAW_STATSNFACTS.CHINOOK.customertrackreviw;
+
+-- stage the customer table
+
+CREATE OR REPLACE TABLE RAW_STATSNFACTS.CHINOOK.customers (
+    customerid int,
+    firstname varchar,
+    lastname varchar,
+    address varchar,
+    city varchar,
+    state varchar,
+    postalcode varchar,
+    country varchar,
+    phone varchar,
+    fax varchar,
+    email varchar,
+    supportrepId int
+);
+
+COPY INTO RAW_STATSNFACTS.CHINOOK.customers
+FROM '@RAW_STATSNFACTS.PUBLIC.externalworld_database/chinook.customer.parquet'
+MATCH_BY_COLUMN_NAME = CASE_INSENSITIVE;
+
+SELECT * FROM RAW_STATSNFACTS.CHINOOK.customers;
+
+-- stage Invoice Table
+CREATE OR REPLACE TABLE RAW_STATSNFACTS.CHINOOK.invoice (
+    invoiceid varchar,
+    customerid int, 
+    invoicedate varchar,
+    billingaddress varchar,
+    billingcity varchar, 
+    billingstate varchar,
+    billingcountry varchar,
+    billingpostalcode varchar,
+    total int
+);
+
+COPY INTO RAW_STATSNFACTS.CHINOOK.invoice
+FROM '@RAW_STATSNFACTS.PUBLIC.externalworld_database/chinook.invoice.parquet'
+MATCH_BY_COLUMN_NAME = CASE_INSENSITIVE;
+
+SELECT * FROM RAW_STATSNFACTS.CHINOOK.invoice;
+
+-- stage invoiceline
+
+CREATE OR REPLACE TABLE RAW_STATSNFACTS.CHINOOK.invoiceLine (
+    invoicelineId int, 
+    invoiceid int,
+    trackid int,
+    unitprice int, 
+    quantity int
+);
+COPY INTO RAW_STATSNFACTS.CHINOOK.invoiceLine
+FROM '@RAW_STATSNFACTS.PUBLIC.externalworld_database/chinook.invoiceline.parquet'
+MATCH_BY_COLUMN_NAME = CASE_INSENSITIVE;
+
+SELECT * FROM RAW_STATSNFACTS.CHINOOK.invoiceLine;
+
+-- stage track
+DROP TABLE RAW_STATSNFACTS.chinook.track
+CREATE OR REPLACE TABLE RAW_STATSNFACTS.chinook.track (
+    trackid int,
+    name varchar, 
+    albumid int,
+    mediatypeid int, 
+    genreid int,
+    composer varchar,
+    milliseconds varchar,
+    bytes int,
+    unitprice int
+);
+COPY INTO RAW_STATSNFACTS.CHINOOK.track
+FROM '@RAW_STATSNFACTS.PUBLIC.externalworld_database/chinook.track.parquet'
+MATCH_BY_COLUMN_NAME = CASE_INSENSITIVE;
+SELECT * FROM RAW_STATSNFACTS.CHINOOK.track
+-- stage album
+DROP TABLE RAW_STATSNFACTS.chinook.album
+CREATE OR REPLACE TABLE  RAW_STATSNFACTS.chinook.album (
+    albumid int, 
+    title varchar,
+    artistid int
+);
+COPY INTO RAW_STATSNFACTS.CHINOOK.album
+FROM '@RAW_STATSNFACTS.PUBLIC.externalworld_database/chinook.album.parquet'
+MATCH_BY_COLUMN_NAME = CASE_INSENSITIVE;
+
+-- stage Artist
+DROP TABLE RAW_STATSNFACTS.chinook.artist
+CREATE OR REPLACE TABLE RAW_STATSNFACTS.chinook.artist (
+    artistid int,
+    name varchar
+);
+COPY INTO RAW_STATSNFACTS.chinook.artist
+FROM '@RAW_STATSNFACTS.PUBLIC.externalworld_database/chinook.artist.parquet'
+MATCH_BY_COLUMN_NAME = CASE_INSENSITIVE;
+SELECT * FROM RAW_STATSNFACTS.chinook.artist
+
+-- stage Genre
+DROP TABLE RAW_STATSNFACTS.chinook.genre
+CREATE OR REPLACE TABLE RAW_STATSNFACTS.chinook.genre (
+    genreid int,
+    name varchar
+);
+COPY INTO RAW_STATSNFACTS.chinook.genre
+FROM '@RAW_STATSNFACTS.PUBLIC.externalworld_database/chinook.genre.parquet'
+MATCH_BY_COLUMN_NAME = CASE_INSENSITIVE;
+
+-- stage MediaType
+DROP TABLE RAW_STATSNFACTS.chinook.mediatype
+CREATE OR REPLACE TABLE RAW_STATSNFACTS.chinook.mediatype (
+    mediatypeid int,
+    name varchar
+);
+COPY INTO RAW_STATSNFACTS.chinook.mediatype
+FROM '@RAW_STATSNFACTS.PUBLIC.externalworld_database/chinook.mediatype.parquet'
+MATCH_BY_COLUMN_NAME = CASE_INSENSITIVE;
+
+
+-- Sanity Check
+select TABLE_CATALOG,TABLE_SCHEMA,TABLE_NAME,ROW_COUNT 
+    from RAW_STATSNFACTS.INFORMATION_SCHEMA.TABLES
+    where TABLE_SCHEMA='CHINOOK' order by TABLE_NAME;
