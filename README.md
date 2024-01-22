@@ -5,6 +5,7 @@
 - Datawarehouse: Snowflake
 - Transformation: DBT(Data built tool)
 - BI Tool: PowerBi
+- Excel : Dimensional Modelling (Kimball's Bus Matrix)
 
 ### Introduction:
 The Chinook Database ELT is a data warehouse that is used to track and analyze music streaming activity. It is designed to be easy to use and maintain, and it can be used by a variety of professionals, such as data analysts, data scientists, and business intelligence analysts.
